@@ -1,7 +1,9 @@
 services:
   - type: web
-    name: invoice-extractor
+    name: invoice-ai-extractor
     runtime: python
-    plan: free
     buildCommand: "pip install -r requirements.txt"
-    startCommand: "uvicorn app.main:app --host 0.0.0.0 --port 10000"
+    startCommand: "uvicorn app.main:app --host 0.0.0.0 --port $PORT"
+    envVars:
+      - key: OPENAI_API_KEY
+        sync: false
