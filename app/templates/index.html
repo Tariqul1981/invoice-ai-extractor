@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>AI Invoice Extractor</title>
+    <style>
+        body { font-family: Arial; margin: 40px; background: #f9f9f9; }
+        .container { max-width: 800px; margin: auto; background: white; padding: 30px; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+        button { padding: 8px 15px; margin-top: 10px; cursor: pointer; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        table, th, td { border: 1px solid #ddd; }
+        th, td { padding: 8px; text-align: left; }
+        th { background-color: #f2f2f2; }
+        .spinner { display: none; margin-top: 20px; }
+        .download-buttons { margin-top: 20px; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h2>AI Invoice Data Extractor</h2>
+
+    <form id="uploadForm">
+        <input type="file" name="file" required />
+        <br>
+        <button type="submit">Extract Invoice Data</button>
+    </form>
+
+    <div class="spinner" id="spinner">
+        ⏳ Extracting invoice data... Please wait...
+    </div>
+
+    <div id="resultSection" style="display:none;">
+        <h3>Extracted Invoice Data</h3>
+        <table id="resultTable"></table>
+
+        <div class="download-buttons">
+            <button onclick="downloadJSON()">Download JSON</button>
+            <button onclick="downloadCSV()">Download CSV</button>
+        </div>
+    </div>
+</div>
+
+<script>
+let extractedData = null;
+
+document.getElementById("uploadForm").addEventListener("submit", async function(e) {
+    e.preventDefault();
+
+    document.getElementById("spinner").style.display = "block";
+    document.getElementById("resultSection").style.display = "none";
+
+    const formData = new FormData();
+    const fileInput = document.querySelector("input[type=file]");
+    formData.append("file", fileInput.files[0]);
+
+    const response = await fetch("/upload/", {
+        method: "POST",
+        body: formData
+    });
+
+    const data = await response.json();
+    extractedData = data;
+
+    document.getElementById("spinner").style.display = "none";
+
+    renderTable(data);
+    document.getElementById("resultSection").style.display = "block";
+});
+
+function renderTable(data) {
+    const table = document.getElementById("resultTable");
+    table.innerHTML = "";
+
+    for (const key in data) {
+        if (key !== "line_items") {
+            const row = table.insertRow();
+            row.insertCell(0).innerHTML = "<b>" + key + "</b>";
+            row.insertCell(1).innerText = data[key];
+        }
+    }
+
+    if (data.line_items && data.line_items.length > 0) {
+        const headerRow = table.insertRow();
+        headerRow.insertCell(0).innerHTML = "<b>Line Items</b>";
+        headerRow.insertCell(1).innerHTML = "";
+
+        data.line_items.forEach(item => {
+            const row = table.insertRow();
+            row.insertCell(0).innerText = item.description;
+            row.insertCell(1).innerText = 
+                "Qty: " + item.quantity + 
+                ", Unit: " + item.unit_price + 
+                ", Total: " + item.total;
+        });
+    }
+}
+
+function downloadJSON() {
+    const blob = new Blob([JSON.stringify(extractedData, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "invoice_data.json";
+    a.click();
+}
+
+function downloadCSV() {
+    let csv = "Field,Value\n";
+    for (const key in extractedData) {
+        if (key !== "line_items") {
+            csv += key + "," + extractedData[key] + "\n";
+        }
+    }
+
+    if (extractedData.line_items) {
+        csv += "\nLine Items\n";
+        extractedData.line_items.forEach(item => {
+            csv += item.description + "," + item.quantity + "," + item.unit_price + "," + item.total + "\n";
+        });
+    }
+
+    const blob = new Blob([csv], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "invoice_data.csv";
+    a.click();
+}
+</script>
+
+</body>
+</html>
