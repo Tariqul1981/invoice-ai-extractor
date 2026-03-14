@@ -1,5 +1,3 @@
-from app.services.schema import InvoiceSchema
-
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 from fastapi import Request
@@ -12,6 +10,7 @@ import os
 from app.services.pdf_service import extract_text_from_pdf
 from app.services.ocr_service import extract_text_with_ocr
 from app.services.ai_service import extract_invoice_data
+from app.services.schema import InvoiceSchema
 
 app = FastAPI()
 templates = Jinja2Templates(directory="app/templates")
@@ -58,4 +57,6 @@ async def upload_invoice(file: UploadFile = File(...)):
 if __name__ == "__main__":
     import uvicorn
     port = int(os.environ.get("PORT", 8000))
-    uvicorn.run("app.main:app", host="0.0.0.0", port=port)
+    print(port)
+    # uvicorn.run("app.main:app", host="0.0.0.0", port=port)
+
